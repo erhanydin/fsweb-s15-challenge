@@ -1,7 +1,9 @@
 const router = require('express').Router();
+const md = require('./auth-middleware');
+const userModel = require('../models/user-model');
+const utils = require('../../helpers/utils');
 
-router.post('/register', (req, res) => {
-  res.end('kayıt olmayı ekleyin, lütfen!');
+router.post('/register', md.payloadCheck, md.usernameCheck,async (req, res, next) => {
   /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
@@ -27,10 +29,20 @@ router.post('/register', (req, res) => {
     4- Kullanıcı adı alınmışsa BAŞARISIZ kayıtta,
       şu mesajı içermelidir: "username alınmış".
   */
+
+      try {
+        const newUser = {
+          username: req.body.username,
+          password: req.encPassword
+        }
+        let willBeInsertedUser = await userModel.insertUser(newUser);
+        res.status(201).json(willBeInsertedUser) ;
+      } catch (error) {
+        next(error);       
+      }
 });
 
-router.post('/login', (req, res) => {
-  res.end('girişi ekleyin, lütfen!');
+router.post('/login',md.payloadCheck, md.passwordCheck ,(req, res, next) => {
   /*
     EKLEYİN
     Uçnoktanın işlevselliğine yardımcı olmak için middlewarelar yazabilirsiniz.
@@ -54,6 +66,20 @@ router.post('/login', (req, res) => {
     4- "username" db de yoksa ya da "password" yanlışsa BAŞARISIZ giriş,
       şu mesajı içermelidir: "geçersiz kriterler".
   */
+
+      try {
+        const payload = {
+          username: req.user.username,
+        }
+
+        let token = utils.generateToken(payload, "1d");
+        res.status(200).json({
+          message: `welcome ${req.user.username}`,
+          token: token
+        });
+      } catch (error) {
+        next(error);
+      }
 });
 
 module.exports = router;
